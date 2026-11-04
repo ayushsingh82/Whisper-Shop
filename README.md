@@ -23,20 +23,53 @@ Whisper Shop is an agent that watches a shielded Zcash wallet. A buyer sends ZEC
 
 ## How it works
 
-```
-Buyer wallet ──shielded ZEC + memo──▶ Shop wallet (viewing key)
-                                          │
-                                  1. decrypt memo
-                                  2. parse order (LLM proposes)
-                                  3. policy engine validates (plain code)
-                                  4. Bitrefill search + invoice
-                                  5. swap ZEC → invoice asset (NEAR Intents)
-                                  6. pay + verify fulfilment
-                                          │
-Buyer wallet ◀──shielded reply memo (code / eSIM) or refund with reason
+```mermaid
+sequenceDiagram
+    autonumber
+    actor B as Buyer wallet
+    participant S as Shop wallet (viewing key)
+    participant A as Agent
+    participant P as Policy engine (plain code)
+    participant R as Bitrefill
+    participant N as NEAR Intents
+
+    B->>S: shielded ZEC + memo (the order)
+    S->>A: decrypted memo
+    A->>A: LLM proposes a structured order
+    A->>P: validate caps, category, amount paid
+    alt order rejected
+        P-->>B: shielded refund memo with reason
+    else order approved
+        A->>R: search product, create invoice
+        A->>N: swap ZEC to invoice asset (or pay from balance)
+        N->>R: pay invoice
+        R-->>A: redemption code / eSIM details
+        A-->>B: shielded reply memo with the code
+    end
 ```
 
-Order states: `received → parsed → validated → quoted → invoiced → swapped → paid → fulfilled → replied`, with failure states `rejected`, `needs_review`, `refunded`.
+### Order states
+
+```mermaid
+stateDiagram-v2
+    [*] --> received
+    received --> parsed
+    parsed --> validated
+    validated --> quoted
+    quoted --> invoiced
+    invoiced --> swapped
+    swapped --> paid
+    paid --> fulfilled
+    fulfilled --> replied
+    replied --> [*]
+    parsed --> rejected
+    validated --> rejected
+    invoiced --> needs_review
+    swapped --> needs_review
+    rejected --> refunded
+    needs_review --> refunded
+    refunded --> [*]
+```
 
 ### Memo format
 
@@ -82,6 +115,20 @@ Limits, stated plainly:
 
 The console at `/app` shows which adapters are live.
 
+## Testnet proof
+
+A complete round trip on Zcash testnet (NU7): a shielded order with a `WS1` memo, a real Bitrefill purchase, and a shielded reply carrying the eSIM link.
+
+| Step | Transaction ID |
+|---|---|
+| 1. Order: buyer sends shielded ZEC with the memo | [`3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3`](https://testnet.zcashexplorer.app/transactions/3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3) |
+| 2. Reply: shop sends the eSIM link back as a shielded memo | [`96f99a16cebf803ce3ad98cd012aa6888b9f3245adecbfadf372ca4dcd99fede`](https://testnet.zcashexplorer.app/transactions/96f99a16cebf803ce3ad98cd012aa6888b9f3245adecbfadf372ca4dcd99fede) |
+| Shop wallet funding (reply fees) | [`f29ddbc368bd8d06d793977867ba1424ed620a5420ad2c7d79e16954c207bdd3`](https://testnet.zcashexplorer.app/transactions/f29ddbc368bd8d06d793977867ba1424ed620a5420ad2c7d79e16954c207bdd3) |
+
+The order memo asked for `esim thailand 1gb 7d` with a 4 USD cap. The agent bought "Bitrefill eSIM Thailand 1GB, 7 Days" for 2.89 USD (Bitrefill invoice `2c244888-c027-484e-9d5c-43b3eef05c49`) and the buyer wallet decrypted the reply memo. The Bitrefill purchase was paid from the account balance, not ZEC (see [Real vs simulated](#real-vs-simulated)).
+
+Shielded transactions reveal almost nothing on an explorer, by design: expect `Tx Type: Shielded` and no visible amounts or memo.
+
 ## Quick start
 
 Requires Node.js 20+ and, for live mode, Rust (`cargo`).
@@ -92,7 +139,7 @@ cp .env.example .env.local
 npm run dev                        # http://localhost:3000
 ```
 
-Simulated mode works immediately. For live testnet mode follow [md/SETUP.md](./md/SETUP.md).
+Simulated mode works immediately. For live testnet mode follow [src/md/SETUP.md](./src/md/SETUP.md).
 
 ### Configuration
 
@@ -119,19 +166,21 @@ npx tsx --test src/server/*.test.ts                        # unit tests
 src/app/        Next.js routes: landing, /app console, /orders/[id], /api
 src/server/     parser, policy engine, orchestrator, Bitrefill + wallet adapters
 scripts/        worker, order sender, connectivity checks
-md/             all project documentation
+src/md/         all project documentation
 ```
 
 ## Documentation
 
-All docs live in [`md/`](./md):
+All docs live in [`src/md/`](./src/md):
 
 | File | Contents |
 |---|---|
-| [SETUP.md](./md/SETUP.md) | Local setup, wallets, running the worker |
-| [REQUIREMENTS.md](./md/REQUIREMENTS.md) | Accounts, keys, funds and decisions needed |
-| [DESIGN.md](./md/DESIGN.md) | Architecture, schema, milestones, risks |
-| [DEMO_PLAN.md](./md/DEMO_PLAN.md) | Demo script and recording checklist |
+| [SETUP.md](./src/md/SETUP.md) | Local setup, wallets, running the worker |
+| [REQUIREMENTS.md](./src/md/REQUIREMENTS.md) | Accounts, keys, funds and decisions needed |
+| [DESIGN.md](./src/md/DESIGN.md) | Architecture, schema, milestones, risks |
+| [DEMO_PLAN.md](./src/md/DEMO_PLAN.md) | Demo script and recording checklist |
+| [HACKATHON.md](./src/md/HACKATHON.md) | Rules, deadlines, faucets and submission checklist |
+| [SUBMISSION.md](./src/md/SUBMISSION.md) | Ready-to-paste Stadium form answers |
 
 ## Roadmap
 

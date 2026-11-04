@@ -1,6 +1,6 @@
 // Places a REAL testnet order: the buyer wallet sends shielded ZEC with a WS1 memo to the shop wallet.
 // Usage: npx tsx scripts/send-order.mts "esim thailand 5gb 7d" 12 [zec=0.05]
-// Needs ~/.whisper-shop/{buyer,shop} wallets (see md/SETUP.md) and testnet funds in the buyer wallet.
+// Needs ~/.whisper-shop/{buyer,shop} wallets (see src/md/SETUP.md) and testnet funds in the buyer wallet.
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { ZcashCliWallet } from "../src/server/zcash-cli";
