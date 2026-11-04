@@ -1,13 +1,23 @@
 {
   "txs": [
     {
-      "label": "Order",
+      "label": "Order (unassisted run)",
       "note": "Buyer sends shielded ZEC with a WS1 memo",
+      "txid": "c158b16a37f7e6062f64bef96fbc4526347decc170ed6e615bc12f84f8d6bce4"
+    },
+    {
+      "label": "Reply (unassisted run)",
+      "note": "Worker sends the eSIM link back as a shielded memo",
+      "txid": "bda404c9cfdead3c1635d0db560b9ed4b6c7688188ef702bb853d730623f5386"
+    },
+    {
+      "label": "Order (first run)",
+      "note": "Earlier order; its reply was sent by the recovery script",
       "txid": "3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3"
     },
     {
-      "label": "Reply",
-      "note": "Shop sends the eSIM link back as a shielded memo",
+      "label": "Reply (first run)",
+      "note": "Shielded reply memo",
       "txid": "96f99a16cebf803ce3ad98cd012aa6888b9f3245adecbfadf372ca4dcd99fede"
     },
     {
@@ -19,7 +29,21 @@
   "purchase": {
     "item": "Bitrefill eSIM Thailand, 1GB for 7 days",
     "priceUsd": 2.89,
-    "invoiceId": "2c244888-c027-484e-9d5c-43b3eef05c49",
+    "invoiceId": "800818ca-def0-4f9d-a07f-fd299abd9349",
     "paidWith": "Bitrefill account balance"
+  },
+  "wallets": {
+    "asOf": "2026-11-04",
+    "height": 4581723,
+    "shop": {
+      "address": "utest1p5kt4tknjehz3ysvglgfeq9e5stfyvzsurm99mfc34y2yt0qfq26qq7q3qmddnhdv84fgt69amr7g9nt4f8uqz7v2mm23d9wnxssd9792ulekgy52s0y4ynqdvtxlfrvu3ulmplkj9pphcscucmaxux6akumwtcpmswz9jl23rqtj7tg5xrdc340kgg8kwnkalfp4lzy5jalczaemje",
+      "totalZec": 0.1394,
+      "spendableZec": 0.0198
+    },
+    "buyer": {
+      "address": "utest16k29pdfjg8qxgkg4pp4qevvvcw08xdmdc6u678j4uecd8wzu9nr0hrue52n8ggpyr0mpkuq4787uxnznzsuq4208z5r2uyv8nrxnslaaum0646z7d4etptne0t37f7ktzw5ew63avqazvnx84s6kvj4844ljqsttnqtlcmtuegruu4pych0qkpq5sunvtwrus2nmehfhxrycwqq3ahk",
+      "totalZec": 0.3599,
+      "spendableZec": 0.3598
+    }
   }
 }

@@ -1,64 +1,61 @@
-# How we will show the demo
+# Demo video plan
 
-The demo is real, not a scripted web page. Judges watch the first 3 minutes of the video, so the video must show a real shielded payment becoming a real purchase and a real shielded reply. Anything simulated is labelled as such on screen.
+Goal: show the real thing, once, with nothing faked. Target length **2:45**. Privacy judges watch only the first 2 minutes and Bitrefill allows 3 minutes, so the payment, the purchase and the reply must all land **before 2:00**.
 
-## Principle
+## What judges must see (in this order)
 
-One unbroken take, two windows side by side:
+1. A real shielded order sent with a memo.
+2. The agent decrypting it and applying the spending rules.
+3. A real Bitrefill purchase.
+4. The code arriving as a shielded memo.
+5. What is and is not private, stated honestly.
 
-- **Left:** the buyer's wallet (a Zcash testnet wallet that can send a memo, and shows the incoming reply).
-- **Right:** the Whisper Shop console at `/app`, showing the live order timeline and the Real vs simulated panel.
+## Setup: two windows side by side
 
-No cuts between the payment and the reply. If a step takes long (testnet confirmations), say so out loud and use a pre-sent order for the confirmed result, shown as a second take.
+- **Left, terminal (the buyer):** large font, dark theme. Runs the order and later shows the decrypted reply.
+- **Right, console at `http://localhost:3000/app`:** the live pipeline, with the stat cards and Testnet proof panel visible.
+- Third tab ready: the Bitrefill account page (balance and invoice) and the testnet explorer page for the order txid.
 
-## 3-minute script
+## Script (2:45)
 
-| Time | On screen | What I say |
+| Time | Show | Say |
 |---|---|---|
-| 0:00–0:20 | Landing page hero | "Buying with Zcash today means accounts and emails. Whisper Shop makes the memo the order." |
-| 0:20–0:50 | Buyer wallet: compose a shielded payment, type the `WS1` memo, send | "A normal shielded payment. The memo says what I want, how much I'll pay at most, and where to reply." |
-| 0:50–1:30 | Console: order timeline fills in live (parsed, validated, quoted, invoiced, swapped, paid) | "The agent decrypts the memo. An LLM can propose the order, but plain code checks it against caps and what I paid." |
-| 1:30–2:00 | Bitrefill invoice and swap shown in the receipt page `/orders/[id]` | "It buys on Bitrefill. Bitrefill doesn't take ZEC, so the agent swaps through NEAR Intents. This leg leaves the shielded pool and I say so." |
-| 2:00–2:25 | Wallet: reply memo arrives with the eSIM details | "The code comes back as a shielded memo. No email, no website, no account." |
-| 2:25–2:45 | Console: send an over-cap order, refund memo arrives with the reason | "If something is wrong it refunds with a reason instead of guessing." |
-| 2:45–3:00 | Receipt page "Who saw what" table, then the 30-day plan | "Here is exactly who saw what. Next: publish the memo spec and library, then standing orders." |
+| 0:00 to 0:15 | Landing page hero | "Paying with shielded Zcash usually means accounts and emails. Whisper Shop makes the memo the order." |
+| 0:15 to 0:45 | Terminal: run `send-order.mts "esim thailand 1gb 7d" 4 0.02`, show the memo and the txid | "This is a normal shielded payment. The memo says what I want, my cap, and where to reply." |
+| 0:45 to 1:20 | Console timeline: parsed, validated, quoted, invoiced, paid | "The agent decrypts the memo with a viewing key. Plain code checks the price, my cap and what I paid. The model never holds spending authority." |
+| 1:20 to 1:40 | Bitrefill account: new invoice, balance dropped by $2.89 | "It buys a real eSIM on Bitrefill. Bitrefill does not take ZEC, so I paid from account balance, and I want to be clear about that." |
+| 1:40 to 2:00 | Terminal: `list-tx` on the buyer wallet shows `WS1 OK ... code: https://...` | "The code comes back as a shielded memo. No website, no account, no email." |
+| 2:00 to 2:20 | Over-cap order, refund memo with the reason | "If something is wrong it refunds with a reason instead of guessing." |
+| 2:20 to 2:40 | Explorer page: `Shielded`, no amounts, no memo. Then the who-sees-what table | "On-chain observers see nothing. The operator can read orders, Bitrefill sees the invoice, the light-wallet server sees the IP." |
+| 2:40 to 2:45 | Testnet proof panel | "Next: publish the memo spec and library, then standing orders." |
 
-## What must be real in the video
+## Make it excellent
 
-| Item | Real or simulated | Evidence shown |
-|---|---|---|
-| Shielded testnet payment with memo | Real | Testnet txid on screen and in the submission |
-| Memo decrypted by the shop wallet | Real | Console timeline |
-| Policy decision | Real code | Console timeline, refund memo |
-| Bitrefill product search and invoice | Real if the API key is set | Real vs simulated panel says `live`, invoice id on the receipt |
-| ZEC to invoice-asset swap | Real mainnet small amount, or skipped (balance fallback). **Decide before recording.** | Swap reference on the receipt, stated in the voice-over |
-| Reply memo | Real | Visible in the buyer wallet |
+- **Rehearse twice.** Run the exact commands once off camera. Confirmations take a minute or two (25 s blocks), so decide how to cover the wait.
+- **Cover the wait honestly.** Say "this takes about a minute to confirm" and cut with a visible "1 min later" card, or send the order just before recording and narrate while it confirms. Never imply it is instant.
+- **Pre-sync both wallets** and `enhance` them right before filming so nothing stalls.
+- **Keep a backup take:** one order already confirmed and replied, shown as a second clip, labelled as such.
+- **Redact the eSIM link** (blur it). Anyone with it can use the eSIM.
+- **Big text, no clutter:** terminal at 18pt or larger, hide bookmarks and notifications, 1080p, clear audio. Add short on-screen captions for each step.
+- **Be honest on screen:** show the Real vs simulated panel and say what is paid from balance.
+- **Lead with the result in the first 10 seconds** (the eSIM arriving in a memo), then show how.
+- Upload as unlisted on YouTube or Loom, and check it plays logged out.
 
-If any row ends up simulated, the panel shows `simulated` and the voice-over says so. We never present a mock as real.
+## Real versus simulated (say this out loud)
 
-## Pre-recording checklist
+| Step | Status |
+|---|---|
+| Shielded order and reply | Real, Zcash testnet |
+| Memo decryption, policy checks | Real code |
+| Bitrefill purchase and delivery | Real |
+| Bitrefill payment | From account balance (no ZEC swap) |
 
-- [ ] Shop wallet funded on testnet and synced
-- [ ] Buyer wallet funded on testnet; it can send a text memo
-- [ ] `BITREFILL_API_KEY` set; one real order tested end to end before filming
-- [ ] Swap path decided and tested with a tiny amount
-- [ ] Console open at `/app` with the panel visible
-- [ ] One order pre-sent and confirmed as a backup take
-- [ ] Over-cap order ready to paste for the refund beat
-- [ ] Screen recording at 1080p, wallet and console both readable
-- [ ] Video under 3 minutes; the payment-to-reply beat happens inside the first 2:30
+## Fallbacks
 
-## Fallbacks if something fails on the day
+1. **Testnet is slow:** show the pre-confirmed backup order and label it.
+2. **Worker hiccup:** the order and reply transactions in the README are real and can be shown on the explorer.
+3. **Wallet not syncing:** run `sync` and `enhance` once, then retry. Do not fake output.
 
-1. **Testnet is slow:** show the pre-sent confirmed order and narrate it as such.
-2. **Swap not possible:** pay Bitrefill from account balance, state it plainly, and keep the shielded order and reply real.
-3. **Bitrefill API issue:** keep the shielded memo round trip real and show the panel with `shop: simulated`. Submit for the Privacy track only.
-4. **Wallet tooling blocked:** this is the one we cannot fake. Without it the project has no real memo round trip, so resolve it first.
+## Evidence to keep
 
-## Submission evidence to collect while recording
-
-- Testnet shielded txid (order) and the reply txid
-- Bitrefill invoice id and fulfilment status
-- Swap reference, if used
-- Screenshots of the receipt page and the Real vs simulated panel
-- Public repo link with commit history
+Order txid, reply txid, Bitrefill invoice id, a screenshot of the Testnet proof panel, the public repo link.

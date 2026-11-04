@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  ArrowUpRight, CheckCircle2, CircleDollarSign, LayoutDashboard,
+  ArrowUpRight, CheckCircle2, CircleDollarSign, Copy, Wallet, LayoutDashboard,
   ListChecks, Menu, MessageSquareLock, PackageCheck, Plug, Receipt, SendHorizontal, ShieldAlert, ShoppingBag, Undo2, X,
 } from "lucide-react";
 import { BrandLogo, BrandMark } from "@/components/brand";
-import { PROOF } from "@/lib/proof";
+import { PROOF, explorerUrl } from "@/lib/proof";
 import { cn } from "@/lib/utils";
 
 interface Order {
@@ -16,6 +16,7 @@ interface Order {
   memo: string;
   product?: string;
   priceUsd?: number;
+  invoiceId?: string;
   note?: string;
   createdAt: string;
   events: { ts: string; state: string; detail: string }[];
@@ -24,6 +25,40 @@ interface Payload {
   adapters: { wallet: string; shop: string; swap: string };
   orders: Order[];
   replies: { to: string; memo: string }[];
+}
+
+interface WalletInfo { address: string; totalZec: number; spendableZec: number }
+interface Status { height: number | null; shop: WalletInfo | null; buyer: WalletInfo | null; bitrefillUsd: number | null }
+
+function CopyButton({ text }: { text: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      onClick={() => { void navigator.clipboard?.writeText(text); setDone(true); setTimeout(() => setDone(false), 1500); }}
+      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+    >
+      <Copy className="size-3" /> {done ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
+function WalletCard({ title, role, w }: { title: string; role: string; w: WalletInfo }) {
+  return (
+    <div className="rounded-lg border bg-muted/40 p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">{title}</p>
+          <p className="text-xs text-muted-foreground">{role}</p>
+        </div>
+        <p className="font-mono text-sm">{w.spendableZec.toFixed(4)} <span className="text-muted-foreground">TAZ</span></p>
+      </div>
+      <p className="mt-3 break-all rounded bg-background/60 p-2 font-mono text-[10px] leading-relaxed text-muted-foreground">{w.address}</p>
+      <div className="mt-2 flex items-center justify-between">
+        <span className="font-mono text-[10px] text-muted-foreground">total {w.totalZec.toFixed(4)} TAZ · unified, shielded</span>
+        <CopyButton text={w.address} />
+      </div>
+    </div>
+  );
 }
 
 type View = "overview" | "orders" | "new" | "replies" | "integrations";
@@ -77,14 +112,14 @@ function StateBadge({ state }: { state: string }) {
 
 function Panel({ title, action, children, className }: { title?: string; action?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cn("rounded-xl border bg-card", className)}>
+    <section className={cn("min-w-0 rounded-xl border bg-card", className)}>
       {title && (
         <header className="flex items-center justify-between border-b px-5 py-3.5">
           <h2 className="text-sm font-medium">{title}</h2>
           {action}
         </header>
       )}
-      <div className="p-5">{children}</div>
+      <div className="min-w-0 p-5">{children}</div>
     </section>
   );
 }
@@ -117,7 +152,7 @@ function Timeline({ order }: { order: Order }) {
   return (
     <ol className="space-y-2 border-l pl-4">
       {order.events.map((e, i) => (
-        <li key={i} className="relative text-xs text-muted-foreground">
+        <li key={i} className="relative break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
           <span className="absolute -left-[21px] top-1.5 size-1.5 rounded-full bg-accent" />
           <span className="font-mono text-foreground">{e.state}</span> · {e.detail}
         </li>
@@ -182,6 +217,22 @@ function OrderDetail({ order }: { order: Order }) {
         <StateBadge state={order.state} />
       </div>
       <div className="mt-5"><Pipeline order={order} /></div>
+      {(order.invoiceId || !isSim(order)) && (
+        <dl className="mt-5 space-y-2 text-xs">
+          {!isSim(order) && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Order transaction</dt>
+              <dd><a href={explorerUrl(order.id.split(":")[0])} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-accent hover:underline">{order.id.slice(0, 10)}… <ArrowUpRight className="size-3" /></a></dd>
+            </div>
+          )}
+          {order.invoiceId && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Bitrefill invoice</dt>
+              <dd className="break-all font-mono text-[10px]">{order.invoiceId}</dd>
+            </div>
+          )}
+        </dl>
+      )}
       <pre className="mt-5 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-[12px] leading-relaxed">{order.memo}</pre>
       <div className="mt-5"><Timeline order={order} /></div>
     </Panel>
@@ -196,11 +247,19 @@ export function Console() {
   const [zec, setZec] = useState(0.05);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<string>();
+  const [status, setStatus] = useState<Status | null>(null);
   const [data, setData] = useState<Payload>({
     adapters: { wallet: "simulated", shop: "simulated", swap: "simulated" },
     orders: [],
     replies: [],
   });
+
+  useEffect(() => {
+    // Deep link to a view, e.g. /app#orders
+    const h = window.location.hash.slice(1) as View;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the URL hash is only possible after mount
+    if (NAV.some((n) => n.id === h)) setView(h);
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -220,6 +279,24 @@ export function Console() {
     };
   }, []);
 
+  useEffect(() => {
+    let live = true;
+    const load = async () => {
+      try {
+        const r = await fetch("/api/status", { cache: "no-store" });
+        if (live) setStatus(await r.json());
+      } catch {
+        /* optional data */
+      }
+    };
+    load();
+    const t = setInterval(load, 30_000);
+    return () => {
+      live = false;
+      clearInterval(t);
+    };
+  }, []);
+
   async function send() {
     setBusy(true);
     await fetch("/api/simulate", {
@@ -230,7 +307,7 @@ export function Console() {
     setBusy(false);
   }
 
-  const orders = useMemo(() => data.orders.slice().reverse(), [data.orders]);
+  const orders = data.orders; // the API already returns newest first
   const stats = useMemo(() => {
     const real = data.orders.filter((o) => !isSim(o)); // simulated test runs are excluded from the totals
     const done = real.filter((o) => GOOD.has(o.state)).length;
@@ -375,6 +452,24 @@ export function Console() {
                   <Pipeline order={orders[0]} />
                 </Panel>
               )}
+              {status && (status.shop || status.bitrefillUsd != null) && (
+                <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+                  {(
+                    [
+                      ["Shop wallet", status.shop ? `${status.shop.spendableZec.toFixed(4)} TAZ` : "–", "receives orders, sends replies"],
+                      ["Buyer wallet", status.buyer ? `${status.buyer.spendableZec.toFixed(4)} TAZ` : "–", "sends orders (demo)"],
+                      ["Bitrefill balance", status.bitrefillUsd != null ? `$${status.bitrefillUsd.toFixed(2)}` : "–", "pays for purchases"],
+                      ["Testnet block", status.height ? status.height.toLocaleString() : "–", "last block the wallet scanned"],
+                    ] as const
+                  ).map(([label, value, hint]) => (
+                    <div key={label} className="rounded-xl border bg-card p-4">
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                      <p className="mt-1.5 font-mono text-lg">{value}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
               <Panel title="Testnet proof" action={<span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-0.5 font-mono text-[11px] text-emerald-300">real round trip</span>}>
                 <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
                   <ul className="space-y-3">
@@ -423,7 +518,7 @@ export function Console() {
           )}
 
           {view === "new" && (
-            <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
               <Panel title="Incoming shielded note">
                 <div className="mb-3 flex flex-wrap gap-2">
                   {PRESETS.map((p) => (
@@ -444,7 +539,7 @@ export function Console() {
                   className="w-full resize-none rounded-lg border bg-muted p-3 font-mono text-[13px] outline-none focus:border-accent/60"
                 />
                 <p className="mt-1 text-right font-mono text-[10px] text-muted-foreground">{memo.length}/512</p>
-                <label className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
+                <label className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
                   ZEC sent
                   <input
                     type="number" step="0.01" min="0" value={zec}
@@ -463,11 +558,11 @@ export function Console() {
               <Panel title="Live timeline">
                 {orders[0] ? (
                   <>
-                    <div className="mb-4 flex items-center justify-between">
-                      <p className="text-sm">{orders[0].product ?? orders[0].note ?? "processing"}</p>
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                      <p className="min-w-0 break-words text-sm">{orders[0].product ?? orders[0].note ?? "processing"}</p>
                       <StateBadge state={orders[0].state} />
                     </div>
-                    <div className="mb-6"><Pipeline order={orders[0]} /></div>
+                    <div className="mb-6 overflow-x-auto pb-1"><div className="min-w-[320px]"><Pipeline order={orders[0]} /></div></div>
                     <Timeline order={orders[0]} />
                   </>
                 ) : (
@@ -514,11 +609,22 @@ export function Console() {
                   </div>
                   <p className="mt-3 text-sm text-muted-foreground">{what}</p>
                   <p className="mt-3 flex gap-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-                    {mode === "live" ? <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-300" /> : <ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-accent" />}
-                    {mode === "live" ? "Connected." : how}
+                    {mode !== "simulated" ? <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-300" /> : <ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-accent" />}
+                    {mode !== "simulated" ? "Connected." : how}
                   </p>
                 </Panel>
               ))}
+              {status && (status.shop || status.buyer) && (
+                <Panel title="Wallets (Zcash testnet)" className="lg:col-span-3">
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {status.shop && <WalletCard title="Shop wallet" role="Receives shielded orders, sends shielded replies" w={status.shop} />}
+                    {status.buyer && <WalletCard title="Buyer wallet" role="Sends orders in the demo" w={status.buyer} />}
+                  </div>
+                  <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Wallet className="size-3.5" /> Read live from the wallets. Anyone can send testnet ZEC to these addresses, and the amounts stay hidden on-chain.
+                  </p>
+                </Panel>
+              )}
               <p className="flex items-center gap-2 text-xs text-muted-foreground lg:col-span-3">
                 <Receipt className="size-3.5" /> Every order has a receipt page showing who saw what.
               </p>

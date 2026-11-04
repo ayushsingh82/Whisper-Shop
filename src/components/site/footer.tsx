@@ -4,10 +4,11 @@ const COLUMNS = [
   {
     title: "Product",
     links: [
-      { label: "How it works", href: "#how" },
-      { label: "The memo format", href: "#memo" },
-      { label: "Privacy and trust", href: "#privacy" },
-      { label: "FAQ", href: "#faq" },
+      { label: "How it works", href: "/#how" },
+      { label: "Architecture", href: "/architecture" },
+      { label: "The memo format", href: "/#memo" },
+      { label: "Privacy and trust", href: "/#privacy" },
+      { label: "FAQ", href: "/#faq" },
       { label: "Open console", href: "/app" },
     ],
   },

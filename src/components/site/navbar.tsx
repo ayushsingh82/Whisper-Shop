@@ -2,11 +2,12 @@ import { ArrowRight, Menu } from "lucide-react";
 import { BrandLogo } from "@/components/brand";
 
 const LINKS = [
-  { href: "#how", label: "How it works" },
-  { href: "#memo", label: "The memo" },
-  { href: "#privacy", label: "Privacy" },
-  { href: "#vs", label: "Why it's different" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#how", label: "How it works" },
+  { href: "/architecture", label: "Architecture" },
+  { href: "/#memo", label: "The memo" },
+  { href: "/#privacy", label: "Privacy" },
+  { href: "/#vs", label: "Why it's different" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export function Navbar() {

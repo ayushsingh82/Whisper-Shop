@@ -38,6 +38,20 @@ export class ZcashCliWallet implements Wallet {
     await this.exec(["wallet", "-w", this.cfg.walletDir, "enhance", "-s", this.cfg.server]);
   }
 
+  /** The wallet's default unified address (public). */
+  async defaultAddress(): Promise<string | undefined> {
+    const out = await this.exec(["wallet", "-w", this.cfg.walletDir, "list-addresses"]);
+    return /Default Address:\s*(\S+)/.exec(out)?.[1];
+  }
+
+  /** Local balance (no network): ZEC amounts plus the chain height the wallet last saw. */
+  async balance(): Promise<{ totalZec: number; spendableZec: number; height: number }> {
+    const out = await this.exec(["wallet", "-w", this.cfg.walletDir, "balance", "--json"]);
+    const j = JSON.parse(out.trim().split("\n").pop() ?? "{}") as Record<string, number>;
+    const spendable = (j.ironwood_spendable ?? 0) + (j.orchard_spendable ?? 0) + (j.sapling_spendable ?? 0) + (j.transparent_spendable ?? 0);
+    return { totalZec: (j.total ?? 0) / 1e8, spendableZec: spendable / 1e8, height: j.chain_tip_height ?? 0 };
+  }
+
   async listTxText(): Promise<string> {
     return this.exec(["wallet", "-w", this.cfg.walletDir, "list-tx"]);
   }

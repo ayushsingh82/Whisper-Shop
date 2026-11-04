@@ -114,19 +114,35 @@ The console at `/app` shows which adapters are live.
 
 ## Testnet proof
 
-A complete round trip on Zcash testnet (NU7): a shielded order with a `WS1` memo, a real Bitrefill purchase, and a shielded reply carrying the eSIM link.
+Everything below happened on Zcash testnet (NU7). Shielded transactions reveal almost nothing on an explorer, by design: expect `Tx Type: Shielded` and no visible amounts or memo. Full IDs are in [`src/data/proof.json`](./src/data/proof.json).
 
-| Step | Transaction ID |
-|---|---|
-| 1. Order: buyer sends shielded ZEC with the memo | [`3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3`](https://testnet.zcashexplorer.app/transactions/3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3) |
-| 2. Reply: shop sends the eSIM link back as a shielded memo | [`96f99a16cebf803ce3ad98cd012aa6888b9f3245adecbfadf372ca4dcd99fede`](https://testnet.zcashexplorer.app/transactions/96f99a16cebf803ce3ad98cd012aa6888b9f3245adecbfadf372ca4dcd99fede) |
-| Shop wallet funding (reply fees) | [`f29ddbc368bd8d06d793977867ba1424ed620a5420ad2c7d79e16954c207bdd3`](https://testnet.zcashexplorer.app/transactions/f29ddbc368bd8d06d793977867ba1424ed620a5420ad2c7d79e16954c207bdd3) |
+### Result
 
-The order memo asked for `esim thailand 1gb 7d` with a 4 USD cap. The agent bought "Bitrefill eSIM Thailand 1GB, 7 Days" for 2.89 USD (Bitrefill invoice `2c244888-c027-484e-9d5c-43b3eef05c49`) and the buyer wallet decrypted the reply memo. The Bitrefill purchase was paid from the account balance, not ZEC (see [Real vs simulated](#real-vs-simulated)).
+**Run 2 was fully unassisted.** The worker decrypted the memo, applied the policy, bought a real eSIM and sent the code back as a shielded memo in about 22 seconds, with no manual steps.
 
-The first reply memo was sent with `scripts/recover-order.mts` after the worker timed out waiting for delivery; the worker has since been fixed to wait for real shops. The recovery script only reads the existing invoice and never buys again.
+| | Order (buyer to shop) | Reply (shop to buyer) | Outcome |
+|---|---|---|---|
+| **Run 2** | [`c158b16a…d6bce4`](https://testnet.zcashexplorer.app/transactions/c158b16a37f7e6062f64bef96fbc4526347decc170ed6e615bc12f84f8d6bce4) | [`bda404c9…3f5386`](https://testnet.zcashexplorer.app/transactions/bda404c9cfdead3c1635d0db560b9ed4b6c7688188ef702bb853d730623f5386) | Fully automatic. eSIM bought, link returned in a shielded memo |
+| **Run 1** | [`3d9fc024…1d74d3`](https://testnet.zcashexplorer.app/transactions/3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3) | [`96f99a16…99fede`](https://testnet.zcashexplorer.app/transactions/96f99a16cebf803ce3ad98cd012aa6888b9f3245adecbfadf372ca4dcd99fede) | Order and purchase worked. The worker timed out waiting for delivery, so the reply was sent by `scripts/recover-order.mts` |
 
-Shielded transactions reveal almost nothing on an explorer, by design: expect `Tx Type: Shielded` and no visible amounts or memo.
+Each order memo asked for `esim thailand 1gb 7d` with a 4 USD cap. The agent bought "Bitrefill eSIM Thailand 1GB, 7 Days" for 2.89 USD and the buyer wallet decrypted both reply memos.
+
+### Everything we tried, in order
+
+| # | What | Transaction or invoice | Result |
+|---|---|---|---|
+| 1 | Testnet faucet funds to the buyer wallet (0.5 TAZ) | [`66941044…b7765e`](https://testnet.zcashexplorer.app/transactions/669410442397b4e881cb0f1db2dbf857b5d43541d8de2ff1ba562edcb6b7765e) | Received |
+| 2 | Real Bitrefill purchase from a test script, to verify the parsers | invoice `ec388763-4146-4419-963f-bd86146284d3` | Delivered ($2.89) |
+| 3 | The same script re-run by mistake | invoice `5890daf2-4321-4318-a551-c96121dd4028` | Delivered ($2.89), not refunded |
+| 4 | Buyer funds the shop wallet for reply fees (0.1 TAZ) | [`f29ddbc3…07bdd3`](https://testnet.zcashexplorer.app/transactions/f29ddbc368bd8d06d793977867ba1424ed620a5420ad2c7d79e16954c207bdd3) | Received |
+| 5 | Run 1 order | [`3d9fc024…1d74d3`](https://testnet.zcashexplorer.app/transactions/3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3) | Shop wallet received it, but the memo was unreadable until the wallet ran `enhance` and the parser handled `Memo::Text` and multi-line memos (both fixed) |
+| 6 | Run 1 purchase | invoice `2c244888-c027-484e-9d5c-43b3eef05c49` | Paid and delivered, but the worker gave up after about 2 seconds (polling fixed for real shops) |
+| 7 | Run 1 reply, sent by the recovery script | [`96f99a16…99fede`](https://testnet.zcashexplorer.app/transactions/96f99a16cebf803ce3ad98cd012aa6888b9f3245adecbfadf372ca4dcd99fede) | Buyer decrypted it |
+| 8 | Run 2 order | [`c158b16a…d6bce4`](https://testnet.zcashexplorer.app/transactions/c158b16a37f7e6062f64bef96fbc4526347decc170ed6e615bc12f84f8d6bce4) | Processed by the worker |
+| 9 | Run 2 purchase | invoice `800818ca-def0-4f9d-a07f-fd299abd9349` | Paid and delivered automatically |
+| 10 | Run 2 reply | [`bda404c9…3f5386`](https://testnet.zcashexplorer.app/transactions/bda404c9cfdead3c1635d0db560b9ed4b6c7688188ef702bb853d730623f5386) | Buyer decrypted it |
+
+Four real eSIMs were bought in total, all from the account balance (about 11.56 USD). Two came from test-script runs, one of them by mistake. Bitrefill was paid from the account balance, not ZEC (see [Real vs simulated](#real-vs-simulated)). The recovery script only reads an existing invoice and never buys again.
 
 ## Quick start
 

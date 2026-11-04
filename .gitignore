@@ -43,3 +43,11 @@ next-env.d.ts
 # local order store
 .data/
 !.env.example
+
+# demo video: everything under /video is local only and never committed (renders, audio, subtitles, frames, screen recordings)
+/video/
+*.mp4
+*.mov
+*.mp3
+*.wav
+*.srt
