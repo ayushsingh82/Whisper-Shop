@@ -1,0 +1,131 @@
+[
+  {
+    "id": "c158b16a37f7e6062f64bef96fbc4526347decc170ed6e615bc12f84f8d6bce4:1",
+    "memo": "WS1\nbuy: esim thailand 1gb 7d\nmax: 4 USD\nreply: utest16k29pdfjg8qxgkg4pp4qevvvcw08xdmdc6u678j4uecd8wzu9nr0hrue52n8ggpyr0mpkuq4787uxnznzsuq4208z5r2uyv8nrxnslaaum0646z7d4etptne0t37f7ktzw5ew63avqazvnx84s6kvj4844ljqsttnqtlcmtuegruu4pych0qkpq5sunvtwrus2nmehfhxrycwqq3ahk",
+    "amountZatoshi": "2000000",
+    "state": "replied",
+    "events": [
+      {
+        "ts": "2026-11-04T10:20:07.619Z",
+        "state": "parsed",
+        "detail": "esim TH max 4 USD"
+      },
+      {
+        "ts": "2026-11-04T10:20:07.619Z",
+        "state": "validated",
+        "detail": "policy ok"
+      },
+      {
+        "ts": "2026-11-04T10:20:08.817Z",
+        "state": "quoted",
+        "detail": "Bitrefill eSIM Thailand 1GB, 7 Days 2.89 USD"
+      },
+      {
+        "ts": "2026-11-04T10:20:09.519Z",
+        "state": "invoiced",
+        "detail": "800818ca-def0-4f9d-a07f-fd299abd9349"
+      },
+      {
+        "ts": "2026-11-04T10:20:09.520Z",
+        "state": "swapped",
+        "detail": "bitrefill-balance:800818ca-def0-4f9d-a07f-fd299abd9349"
+      },
+      {
+        "ts": "2026-11-04T10:20:09.520Z",
+        "state": "paid",
+        "detail": "invoice funded"
+      },
+      {
+        "ts": "2026-11-04T10:20:25.042Z",
+        "state": "fulfilled",
+        "detail": "code received"
+      },
+      {
+        "ts": "2026-11-04T10:20:29.255Z",
+        "state": "replied",
+        "detail": "whisper sent"
+      }
+    ],
+    "createdAt": "2026-11-04T10:20:07.609Z",
+    "replyTo": "utest16k29pdfjg8qxgkg4pp4qevvvcw08xdmdc6u678j4uecd8wzu9nr0hrue52n8ggpyr0mpkuq4787uxnznzsuq4208z5r2uyv8nrxnslaaum0646z7d4etptne0t37f7ktzw5ew63avqazvnx84s6kvj4844ljqsttnqtlcmtuegruu4pych0qkpq5sunvtwrus2nmehfhxrycwqq3ahk",
+    "product": "Bitrefill eSIM Thailand 1GB, 7 Days",
+    "priceUsd": 2.89,
+    "invoiceId": "800818ca-def0-4f9d-a07f-fd299abd9349",
+    "swapRef": "bitrefill-balance:800818ca-def0-4f9d-a07f-fd299abd9349"
+  },
+  {
+    "id": "3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3:0",
+    "memo": "WS1\nbuy: esim thailand 1gb 7d\nmax: 4 USD\nreply: utest16k29pdfjg8qxgkg4pp4qevvvcw08xdmdc6u678j4uecd8wzu9nr0hrue52n8ggpyr0mpkuq4787uxnznzsuq4208z5r2uyv8nrxnslaaum0646z7d4etptne0t37f7ktzw5ew63avqazvnx84s6kvj4844ljqsttnqtlcmtuegruu4pych0qkpq5sunvtwrus2nmehfhxrycwqq3ahk",
+    "amountZatoshi": "2000000",
+    "state": "replied",
+    "events": [
+      {
+        "ts": "2026-11-04T08:52:22.657Z",
+        "state": "parsed",
+        "detail": "esim TH max 4 USD"
+      },
+      {
+        "ts": "2026-11-04T08:52:22.657Z",
+        "state": "validated",
+        "detail": "policy ok"
+      },
+      {
+        "ts": "2026-11-04T08:52:24.201Z",
+        "state": "quoted",
+        "detail": "Bitrefill eSIM Thailand 1GB, 7 Days 2.89 USD"
+      },
+      {
+        "ts": "2026-11-04T08:52:25.228Z",
+        "state": "invoiced",
+        "detail": "2c244888-c027-484e-9d5c-43b3eef05c49"
+      },
+      {
+        "ts": "2026-11-04T08:52:25.229Z",
+        "state": "swapped",
+        "detail": "bitrefill-balance:2c244888-c027-484e-9d5c-43b3eef05c49"
+      },
+      {
+        "ts": "2026-11-04T08:52:25.229Z",
+        "state": "paid",
+        "detail": "invoice funded"
+      },
+      {
+        "ts": "2026-11-04T08:52:28.179Z",
+        "state": "needs_review",
+        "detail": "fulfilment timed out after payment"
+      },
+      {
+        "ts": "2026-11-04T08:53:48.589Z",
+        "state": "fulfilled",
+        "detail": "code received (recovered)"
+      },
+      {
+        "ts": "2026-11-04T08:53:52.683Z",
+        "state": "replied",
+        "detail": "whisper sent: 96f99a16cebf803ce3ad98cd012aa6888b9f3245adecbfadf372ca4dcd99fede"
+      }
+    ],
+    "createdAt": "2026-11-04T08:52:22.646Z",
+    "replyTo": "utest16k29pdfjg8qxgkg4pp4qevvvcw08xdmdc6u678j4uecd8wzu9nr0hrue52n8ggpyr0mpkuq4787uxnznzsuq4208z5r2uyv8nrxnslaaum0646z7d4etptne0t37f7ktzw5ew63avqazvnx84s6kvj4844ljqsttnqtlcmtuegruu4pych0qkpq5sunvtwrus2nmehfhxrycwqq3ahk",
+    "product": "Bitrefill eSIM Thailand 1GB, 7 Days",
+    "priceUsd": 2.89,
+    "invoiceId": "2c244888-c027-484e-9d5c-43b3eef05c49",
+    "swapRef": "bitrefill-balance:2c244888-c027-484e-9d5c-43b3eef05c49",
+    "note": "fulfilment timed out after payment"
+  },
+  {
+    "id": "f29ddbc368bd8d06d793977867ba1424ed620a5420ad2c7d79e16954c207bdd3:3",
+    "memo": "WS1 fund",
+    "amountZatoshi": "10000000",
+    "state": "rejected",
+    "events": [
+      {
+        "ts": "2026-11-04T08:51:52.379Z",
+        "state": "rejected",
+        "detail": "memo must start with WS1"
+      }
+    ],
+    "createdAt": "2026-11-04T08:51:52.368Z",
+    "note": "memo must start with WS1"
+  }
+]
