@@ -31,7 +31,6 @@ sequenceDiagram
     participant A as Agent
     participant P as Policy engine (plain code)
     participant R as Bitrefill
-    participant N as NEAR Intents
 
     B->>S: shielded ZEC + memo (the order)
     S->>A: decrypted memo
@@ -40,10 +39,8 @@ sequenceDiagram
     alt order rejected
         P-->>B: shielded refund memo with reason
     else order approved
-        A->>R: search product, create invoice
-        A->>N: swap ZEC to invoice asset (or pay from balance)
-        N->>R: pay invoice
-        R-->>A: redemption code / eSIM details
+        A->>R: search product, buy (paid from account balance)
+        R-->>A: redemption code / eSIM link
         A-->>B: shielded reply memo with the code
     end
 ```
@@ -96,11 +93,11 @@ Free text is also accepted and normalised by the LLM. Ambiguous orders get a cla
 | Public chain observers | Nothing about order, amount or memo (shielded) |
 | Shop operator | Every order and its contents |
 | Bitrefill | The invoice and payment |
-| Swap provider | The swap from ZEC to the invoice asset |
+| Light-wallet server | The shop wallet's IP address and sync pattern, not the memo contents |
 
 Limits, stated plainly:
 
-- Bitrefill does not document ZEC as a payment method. The swap leg leaves the shielded pool.
+- Bitrefill does not document ZEC as a payment method, so it is paid from the shop's account balance and ZEC does not pay Bitrefill directly. A ZEC swap would leave the shielded pool.
 - Privacy is against outsiders, not against the operator.
 - Memos hold about 512 bytes: enough for codes and activation strings, not QR images.
 
@@ -109,8 +106,8 @@ Limits, stated plainly:
 | Component | Needs | Without it |
 |---|---|---|
 | Zcash wallet (memo read/send) | `zcash-devtool`, funded testnet wallet | Simulated wallet |
-| Bitrefill search and invoice | `BITREFILL_API_KEY` | Simulated shop |
-| ZEC → asset swap | Mainnet NEAR Intents (no testnet) | Not implemented yet |
+| Bitrefill search, purchase, delivery | `BITREFILL_API_KEY` plus the live wallet | Simulated shop |
+| Bitrefill payment | Paid from account balance (auto-debit). No swap leg, so ZEC does not pay Bitrefill | Simulated |
 | Order parsing | Built-in `WS1` parser | LLM optional |
 
 The console at `/app` shows which adapters are live.
@@ -145,11 +142,13 @@ Simulated mode works immediately. For live testnet mode follow [src/md/SETUP.md]
 
 | Variable | Purpose |
 |---|---|
-| `BITREFILL_API_KEY` | Bitrefill product search and purchase |
+| `BITREFILL_API_KEY` | Bitrefill product search and purchase (paid from account balance) |
 | `WHISPER_WALLET_DIR` | Shop wallet directory (keep outside the repo) |
 | `WHISPER_IDENTITY` | Shop wallet identity file (keep outside the repo) |
-| `ZCASH_DEVTOOL_BIN` | Path to `zcash-devtool` |
-| `ZCASH_SERVER` | lightwalletd server alias, default `zecrocks` |
+| `ZCASH_SERVER` | lightwalletd alias or URL, default `zecrocks` |
+| `MAX_ORDER_USD`, `DAILY_CAP_USD` | Spending caps, defaults 20 and 50 |
+
+All variables, with defaults, are in `.env.example`. Deployment notes (what runs on Vercel and what needs a worker) are in [DEPLOY.md](./src/md/DEPLOY.md).
 
 ### Commands
 
@@ -180,6 +179,7 @@ All docs live in [`src/md/`](./src/md):
 | [DESIGN.md](./src/md/DESIGN.md) | Architecture, schema, milestones, risks |
 | [DEMO_PLAN.md](./src/md/DEMO_PLAN.md) | Demo script and recording checklist |
 | [HACKATHON.md](./src/md/HACKATHON.md) | Rules, deadlines, faucets and submission checklist |
+| [DEPLOY.md](./src/md/DEPLOY.md) | What runs on Vercel and what needs a worker |
 | [SUBMISSION.md](./src/md/SUBMISSION.md) | Ready-to-paste Stadium form answers |
 
 ## Roadmap
@@ -187,8 +187,9 @@ All docs live in [`src/md/`](./src/md):
 - [x] Memo parser, policy engine, state machine
 - [x] Console, receipt page, orders API
 - [x] zcash-devtool wallet adapter
-- [ ] Verified Bitrefill search, invoice and fulfilment (needs API key)
-- [ ] Swap and pay, refund path
+- [x] Verified Bitrefill search, purchase and delivery from account balance
+- [x] Shielded reply memo with the eSIM link
+- [ ] Pay Bitrefill directly in ZEC (needs a swap; Bitrefill does not document ZEC)
 - [ ] Whisper Standing Orders (recurring orders)
 - [ ] Publish the memo-order spec and library
 

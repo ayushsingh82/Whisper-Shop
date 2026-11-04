@@ -1,0 +1,25 @@
+{
+  "txs": [
+    {
+      "label": "Order",
+      "note": "Buyer sends shielded ZEC with a WS1 memo",
+      "txid": "3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3"
+    },
+    {
+      "label": "Reply",
+      "note": "Shop sends the eSIM link back as a shielded memo",
+      "txid": "96f99a16cebf803ce3ad98cd012aa6888b9f3245adecbfadf372ca4dcd99fede"
+    },
+    {
+      "label": "Shop funding",
+      "note": "Covers reply-memo fees",
+      "txid": "f29ddbc368bd8d06d793977867ba1424ed620a5420ad2c7d79e16954c207bdd3"
+    }
+  ],
+  "purchase": {
+    "item": "Bitrefill eSIM Thailand, 1GB for 7 days",
+    "priceUsd": 2.89,
+    "invoiceId": "2c244888-c027-484e-9d5c-43b3eef05c49",
+    "paidWith": "Bitrefill account balance"
+  }
+}

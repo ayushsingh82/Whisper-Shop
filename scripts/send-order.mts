@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { ZcashCliWallet } from "../src/server/zcash-cli";
 
-const base = `${homedir()}/.whisper-shop`;
+const base = process.env.WHISPER_HOME ?? `${homedir()}/.whisper-shop`;
 const bin = process.env.ZCASH_DEVTOOL_BIN ?? "zcash-devtool";
 const [item, maxUsd = "12", zec = "0.05"] = process.argv.slice(2);
 if (!item) { console.error('Usage: send-order.mts "<item>" <maxUsd> [zec]'); process.exit(1); }

@@ -22,7 +22,9 @@ export function runtime() {
       dir && identity
         ? new ZcashCliWallet({ bin: process.env.ZCASH_DEVTOOL_BIN ?? "zcash-devtool", walletDir: dir, identity, server: process.env.ZCASH_SERVER ?? "zecrocks" })
         : new MockWallet();
-    const key = process.env.BITREFILL_API_KEY;
+    // The real shop spends real store credit, so it is only used when the real wallet is wired too.
+    // A public deployment with just the key set must never let anonymous visitors trigger purchases.
+    const key = wallet instanceof ZcashCliWallet ? process.env.BITREFILL_API_KEY : undefined;
     // Only the adapters that are really wired report "live". Swap is skipped: with a key Bitrefill is paid from account balance.
     const adapters: AdapterStatus = {
       wallet: wallet instanceof ZcashCliWallet ? "live" : "simulated",
@@ -37,8 +39,13 @@ export function runtime() {
         wallet,
         shop: key ? new BitrefillShop(key) : new MockShop(),
         swapper: key ? new BalanceSwapper() : new MockSwapper(),
-        store: new Store(".data/orders.json"),
-        policy: { maxOrderUsd: 20, dailyCapUsd: 50, allowedKinds: ["esim", "topup", "giftcard"], zecUsd: 400 },
+        store: new Store(process.env.ORDERS_FILE ?? (process.env.VERCEL ? "/tmp/orders.json" : ".data/orders.json")),
+        policy: {
+          maxOrderUsd: Number(process.env.MAX_ORDER_USD ?? 20),
+          dailyCapUsd: Number(process.env.DAILY_CAP_USD ?? 50),
+          allowedKinds: ["esim", "topup", "giftcard"],
+          zecUsd: Number(process.env.ZEC_USD ?? 400), // testnet coins are worthless; this prices a payment in USD for the cap checks
+        },
         payMethod: key ? "balance" : "litecoin",
         fulfilmentPolls: key ? 30 : 3, // real shops take seconds to deliver; the mock is instant
         sleep: (ms) => new Promise((r) => setTimeout(r, key ? ms : Math.min(ms, 700))),

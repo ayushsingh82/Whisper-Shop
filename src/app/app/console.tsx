@@ -7,6 +7,7 @@ import {
   ListChecks, Menu, MessageSquareLock, PackageCheck, Plug, Receipt, SendHorizontal, ShieldAlert, ShoppingBag, Undo2, X,
 } from "lucide-react";
 import { BrandLogo, BrandMark } from "@/components/brand";
+import { PROOF } from "@/lib/proof";
 import { cn } from "@/lib/utils";
 
 interface Order {
@@ -55,6 +56,7 @@ const PRESETS: { label: string; memo: string; zec: number }[] = [
   { label: "Underpaid", memo: SAMPLE, zec: 0.001 },
 ];
 
+const isSim = (o: { id: string }) => o.id.startsWith("sim");
 const GOOD = new Set(["replied", "fulfilled", "paid"]);
 const BAD = new Set(["rejected", "refunded", "needs_review"]);
 
@@ -148,7 +150,10 @@ function OrdersTable({ orders, onSelect, selected }: { orders: Order[]; onSelect
               className={cn("cursor-pointer border-b last:border-0 hover:bg-muted/50", selected === o.id && "bg-muted/60")}
             >
               <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{o.id.slice(0, 12)}…</td>
-              <td className="py-3">{o.product ?? <span className="text-muted-foreground">{o.note ?? "processing"}</span>}</td>
+              <td className="py-3">
+                {o.product ?? <span className="text-muted-foreground">{o.note ?? "processing"}</span>}
+                {isSim(o) && <span className="ml-2 rounded border px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground">simulated</span>}
+              </td>
               <td className="py-3 font-mono text-xs">{o.priceUsd != null ? `$${o.priceUsd.toFixed(2)}` : "–"}</td>
               <td className="py-3"><StateBadge state={o.state} /></td>
               <td className="px-5 py-3 text-right font-mono text-xs text-muted-foreground">
@@ -227,10 +232,11 @@ export function Console() {
 
   const orders = useMemo(() => data.orders.slice().reverse(), [data.orders]);
   const stats = useMemo(() => {
-    const done = data.orders.filter((o) => GOOD.has(o.state)).length;
-    const failed = data.orders.filter((o) => BAD.has(o.state)).length;
-    const spent = data.orders.filter((o) => GOOD.has(o.state)).reduce((n, o) => n + (o.priceUsd ?? 0), 0);
-    return { total: data.orders.length, done, failed, spent };
+    const real = data.orders.filter((o) => !isSim(o)); // simulated test runs are excluded from the totals
+    const done = real.filter((o) => GOOD.has(o.state)).length;
+    const failed = real.filter((o) => BAD.has(o.state)).length;
+    const spent = real.filter((o) => GOOD.has(o.state)).reduce((n, o) => n + (o.priceUsd ?? 0), 0);
+    return { total: real.length, done, failed, spent };
   }, [data.orders]);
   const active = orders.find((o) => o.id === selected) ?? orders[0];
   const current = NAV.find((n) => n.id === view)!;
@@ -348,7 +354,7 @@ export function Console() {
               <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
                 {(
                   [
-                    ["Total orders", String(stats.total), ShoppingBag, "text-foreground"],
+                    ["Real orders", String(stats.total), ShoppingBag, "text-foreground"],
                     ["Fulfilled", String(stats.done), PackageCheck, "text-emerald-300"],
                     ["Refunded / rejected", String(stats.failed), Undo2, "text-red-300"],
                     ["Spent from balance", `$${stats.spent.toFixed(2)}`, CircleDollarSign, "text-accent"],
@@ -369,6 +375,32 @@ export function Console() {
                   <Pipeline order={orders[0]} />
                 </Panel>
               )}
+              <Panel title="Testnet proof" action={<span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-0.5 font-mono text-[11px] text-emerald-300">real round trip</span>}>
+                <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+                  <ul className="space-y-3">
+                    {PROOF.txs.map((t) => (
+                      <li key={t.txid} className="flex items-start justify-between gap-4 text-sm">
+                        <div className="min-w-0">
+                          <p className="font-medium">{t.label}</p>
+                          <p className="text-xs text-muted-foreground">{t.note}</p>
+                        </div>
+                        <a href={t.url} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-accent hover:underline">
+                          {t.txid.slice(0, 8)}…{t.txid.slice(-6)} <ArrowUpRight className="size-3" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="rounded-lg bg-muted/60 p-4 text-sm">
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Bitrefill purchase</p>
+                    <p className="mt-2">{PROOF.purchase.item}</p>
+                    <p className="mt-1 font-mono text-xs text-muted-foreground">${PROOF.purchase.priceUsd.toFixed(2)} · paid with {PROOF.purchase.paidWith.toLowerCase()}</p>
+                    <p className="mt-3 break-all font-mono text-[10px] text-muted-foreground">invoice {PROOF.purchase.invoiceId}</p>
+                  </div>
+                </div>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  The order and the reply are shielded: explorers show only “Shielded”, with no amounts or memo. Bitrefill was paid from account balance, not ZEC.
+                </p>
+              </Panel>
               <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
                 <Panel title="Recent orders" action={<button onClick={() => go("orders")} className="text-xs text-accent hover:underline">View all</button>}>
                   <OrdersTable orders={orders.slice(0, 6)} />
@@ -472,7 +504,7 @@ export function Console() {
                 [
                   ["Zcash wallet", data.adapters.wallet, "Reads order memos and sends replies via zcash-devtool.", "Set WHISPER_WALLET_DIR and WHISPER_IDENTITY, fund the buyer wallet with testnet ZEC."],
                   ["Bitrefill shop", data.adapters.shop, "Searches products and creates invoices.", "Set BITREFILL_API_KEY in .env.local."],
-                  ["ZEC swap", data.adapters.swap, "Swaps ZEC to the invoice asset through NEAR Intents.", "Not implemented yet. Fallback: pay from Bitrefill balance."],
+                  ["Bitrefill payment", data.adapters.swap, "Pays the Bitrefill invoice from the account balance. Bitrefill debits it automatically, so there is no swap leg.", "Set BITREFILL_API_KEY to pay from balance."],
                 ] as const
               ).map(([name, mode, what, how]) => (
                 <Panel key={name}>
@@ -503,7 +535,7 @@ function ModeBadge({ mode }: { mode: string }) {
     <span
       className={cn(
         "rounded-full border px-2 py-0.5 font-mono text-[11px]",
-        mode === "live" ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : "border-accent/40 bg-accent/10 text-accent",
+        mode !== "simulated" ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : "border-accent/40 bg-accent/10 text-accent",
       )}
     >
       {mode}
@@ -518,7 +550,7 @@ function AdapterList({ adapters }: { adapters: Payload["adapters"] }) {
         [
           ["Zcash wallet (memos)", adapters.wallet],
           ["Bitrefill shop", adapters.shop],
-          ["ZEC swap", adapters.swap],
+          ["Bitrefill payment", adapters.swap],
         ] as const
       ).map(([label, mode]) => (
         <li key={label} className="flex items-center justify-between">

@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { ZcashCliWallet } from "../src/server/zcash-cli";
 
-const base = `${homedir()}/.whisper-shop`;
+const base = process.env.WHISPER_HOME ?? `${homedir()}/.whisper-shop`;
 const bin = process.env.ZCASH_DEVTOOL_BIN ?? "zcash-devtool";
 const out = execFileSync(bin, ["wallet", "-w", `${base}/shop`, "list-addresses"], { encoding: "utf8" });
 const shopAddr = /Default Address:\s*(\S+)/.exec(out)?.[1];

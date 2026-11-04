@@ -21,7 +21,11 @@ export interface OrderRow {
 export class Store {
   private rows = new Map<string, OrderRow>();
   constructor(private path?: string) {
-    if (path && existsSync(path)) for (const r of JSON.parse(readFileSync(path, "utf8")) as OrderRow[]) this.rows.set(r.id, r);
+    try {
+      if (path && existsSync(path)) for (const r of JSON.parse(readFileSync(path, "utf8")) as OrderRow[]) this.rows.set(r.id, r);
+    } catch {
+      /* unreadable file: start empty */
+    }
   }
   has(id: string) { return this.rows.has(id); }
   get(id: string) { return this.rows.get(id); }
@@ -42,7 +46,11 @@ export class Store {
   }
   private flush() {
     if (!this.path) return;
-    mkdirSync(dirname(this.path), { recursive: true });
-    writeFileSync(this.path, JSON.stringify(this.all(), null, 2));
+    try {
+      mkdirSync(dirname(this.path), { recursive: true });
+      writeFileSync(this.path, JSON.stringify(this.all(), null, 2));
+    } catch {
+      /* read-only filesystem (serverless): keep orders in memory only */
+    }
   }
 }
