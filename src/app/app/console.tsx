@@ -14,7 +14,7 @@ interface Order {
   events: { ts: string; state: string; detail: string }[];
 }
 interface Payload {
-  mode: string;
+  adapters: { wallet: string; shop: string; swap: string };
   orders: Order[];
   replies: { to: string; memo: string }[];
 }
@@ -26,7 +26,11 @@ const BAD = new Set(["rejected", "refunded", "needs_review"]);
 export function Console() {
   const [memo, setMemo] = useState(SAMPLE);
   const [zec, setZec] = useState(0.05);
-  const [data, setData] = useState<Payload>({ mode: "simulated", orders: [], replies: [] });
+  const [data, setData] = useState<Payload>({
+    adapters: { wallet: "simulated", shop: "simulated", swap: "simulated" },
+    orders: [],
+    replies: [],
+  });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -60,9 +64,32 @@ export function Console() {
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
       <section className="space-y-4">
-        <div className="rounded-xl border border-accent/40 bg-accent/5 p-3 text-xs text-muted-foreground">
-          <b className="text-accent">Simulated mode.</b> Wallet, Bitrefill and swap are mocks. The parser, policy
-          engine and state machine are the real code.
+        <div className="rounded-xl border bg-card p-4">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Real vs simulated</p>
+          <ul className="mt-3 space-y-2 text-sm">
+            {(
+              [
+                ["Zcash wallet (memos)", data.adapters.wallet],
+                ["Bitrefill shop", data.adapters.shop],
+                ["ZEC swap", data.adapters.swap],
+              ] as const
+            ).map(([label, mode]) => (
+              <li key={label} className="flex items-center justify-between">
+                <span className="text-muted-foreground">{label}</span>
+                <span
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 font-mono text-[11px]",
+                    mode === "live" ? "border-emerald-400/40 text-emerald-300" : "border-accent/40 text-accent",
+                  )}
+                >
+                  {mode}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-muted-foreground">
+            The parser, policy engine and state machine are always the real code.
+          </p>
         </div>
         <div className="rounded-xl border bg-card p-5">
           <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Incoming shielded note</p>
