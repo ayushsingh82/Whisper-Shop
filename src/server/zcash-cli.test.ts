@@ -33,6 +33,9 @@ test("zecToZatoshi is exact", () => {
 test("memo field unescapes Rust debug strings and skips non-text", () => {
   assert.equal(parseMemoField('Text("a\\nb")'), "a\nb");
   assert.equal(parseMemoField("Empty"), undefined);
+  // real zcash-devtool output prefixes the enum name
+  assert.equal(parseMemoField('Memo::Text("WS1\\nbuy: esim")'), "WS1\nbuy: esim");
+  assert.equal(parseMemoField("Memo::Empty"), undefined);
   assert.equal(parseMemoField("Arbitrary([0, 1])"), undefined);
 });
 
@@ -42,4 +45,21 @@ test("parseListTx returns only received text memos", () => {
   assert.equal(got[0].txid, TXID);
   assert.equal(got[0].amountZatoshi, 5_000_000n);
   assert.match(got[0].memo, /^WS1\nbuy: esim/);
+});
+
+test("parseListTx reads a text memo that spans several lines", () => {
+  const out = [
+    "3d9fc0248a35bf2fc88da224139a333256a886f37bd1f75ae31362fa2a1d74d3",
+    "  Output 0 (Ironwood)",
+    "    Value:   0.02000000 TAZ",
+    "    Received by account: abc (whisper-shop)",
+    '    Memo: Memo::Text("WS1',
+    "buy: esim thailand 1gb 7d",
+    "max: 4 USD",
+    'reply: utest1abc")',
+  ].join("\n");
+  const r = parseListTx(out);
+  assert.equal(r.length, 1);
+  assert.equal(r[0].memo, "WS1\nbuy: esim thailand 1gb 7d\nmax: 4 USD\nreply: utest1abc");
+  assert.equal(r[0].amountZatoshi, 2_000_000n);
 });

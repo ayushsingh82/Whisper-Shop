@@ -34,6 +34,8 @@ export class ZcashCliWallet implements Wallet {
 
   async sync(): Promise<void> {
     await this.exec(["wallet", "-w", this.cfg.walletDir, "sync", "-s", this.cfg.server]);
+    // Compact blocks carry no memos: `enhance` fetches the full transactions so memos can be decrypted.
+    await this.exec(["wallet", "-w", this.cfg.walletDir, "enhance", "-s", this.cfg.server]);
   }
 
   async listTxText(): Promise<string> {
@@ -74,7 +76,7 @@ export function zecToZatoshi(zec: string): bigint {
 /** Undo Rust `{:?}` string escaping for a text memo: Text("a\nb") -> a<newline>b. */
 export function parseMemoField(raw: string): string | undefined {
   const t = raw.trim();
-  const m = /^(?:Text\()?"((?:[^"\\]|\\.)*)"\)?$/.exec(t);
+  const m = /^(?:Memo::)?(?:Text\()?"((?:[^"\\]|\\.)*)"\)?$/.exec(t);
   if (!m) return undefined; // Empty, Future(..), Arbitrary(..) and anything unrecognised are ignored
   return m[1].replace(/\\(n|r|t|"|\\|0)/g, (_s, c: string) => ({ n: "\n", r: "\r", t: "\t", '"': '"', "\\": "\\", "0": "\0" })[c] ?? c);
 }
@@ -91,8 +93,9 @@ export function parseListTx(out: string): IncomingMemo[] {
   let outIdx = -1;
   let value = 0n;
   let received = false;
-  for (const line of out.split("\n")) {
-    const t = line.trim();
+  const lines = out.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
     if (/^[0-9a-f]{64}$/i.test(t)) { txid = t; outIdx = -1; continue; }
     const o = /^Output (\d+)\b/.exec(t);
     if (o) { outIdx = Number(o[1]); value = 0n; received = false; continue; }
@@ -102,7 +105,10 @@ export function parseListTx(out: string): IncomingMemo[] {
     if (t.startsWith("Received by account")) { received = true; continue; }
     const mm = /^Memo:\s*(.*)$/.exec(t);
     if (mm && received) {
-      const memo = parseMemoField(mm[1]);
+      // Text memos print with real newlines, so one memo can span several lines until the closing `")`.
+      let raw = mm[1];
+      while (/^(?:Memo::)?Text\("/.test(raw) && !/"\)\s*$/.test(raw) && i + 1 < lines.length) raw += "\n" + lines[++i];
+      const memo = parseMemoField(raw);
       if (memo) res.push({ txid, outputIndex: outIdx, amountZatoshi: value, memo });
     }
   }

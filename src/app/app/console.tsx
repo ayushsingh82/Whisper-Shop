@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  ArrowLeft, ArrowUpRight, CheckCircle2, LayoutDashboard, ListChecks, Menu, MessageSquareLock,
-  Plug, Receipt, SendHorizontal, ShieldAlert, X,
+  ArrowUpRight, CheckCircle2, CircleDollarSign, LayoutDashboard,
+  ListChecks, Menu, MessageSquareLock, PackageCheck, Plug, Receipt, SendHorizontal, ShieldAlert, ShoppingBag, Undo2, X,
 } from "lucide-react";
-import { BrandLogo } from "@/components/brand";
+import { BrandLogo, BrandMark } from "@/components/brand";
 import { cn } from "@/lib/utils";
 
 interface Order {
@@ -27,13 +27,26 @@ interface Payload {
 
 type View = "overview" | "orders" | "new" | "replies" | "integrations";
 
-const NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "orders", label: "Orders", icon: ListChecks },
-  { id: "new", label: "New order", icon: SendHorizontal },
-  { id: "replies", label: "Shielded replies", icon: MessageSquareLock },
-  { id: "integrations", label: "Integrations", icon: Plug },
+const NAV_GROUPS: { title: string; items: { id: View; label: string; icon: typeof LayoutDashboard }[] }[] = [
+  {
+    title: "Workspace",
+    items: [
+      { id: "overview", label: "Overview", icon: LayoutDashboard },
+      { id: "orders", label: "Orders", icon: ListChecks },
+      { id: "new", label: "New order", icon: SendHorizontal },
+    ],
+  },
+  {
+    title: "Agent",
+    items: [
+      { id: "replies", label: "Shielded replies", icon: MessageSquareLock },
+      { id: "integrations", label: "Integrations", icon: Plug },
+    ],
+  },
 ];
+const NAV = NAV_GROUPS.flatMap((g) => g.items);
+
+const STEPS = ["received", "parsed", "validated", "quoted", "invoiced", "paid", "fulfilled", "replied"] as const;
 
 const SAMPLE = `WS1\nbuy: esim thailand 5gb 7d\nmax: 12 USD\nreply: utest1abcdefghijklmnop`;
 const PRESETS: { label: string; memo: string; zec: number }[] = [
@@ -71,6 +84,30 @@ function Panel({ title, action, children, className }: { title?: string; action?
       )}
       <div className="p-5">{children}</div>
     </section>
+  );
+}
+
+/** Horizontal progress of one order through the state machine. Failures turn the furthest step red. */
+function Pipeline({ order }: { order: Order }) {
+  const seen = new Set(["received", ...order.events.map((e) => e.state === "swapped" ? "invoiced" : e.state)]);
+  const reached = STEPS.reduce((n, st, i) => (seen.has(st) ? i : n), 0);
+  const failed = BAD.has(order.state);
+  return (
+    <ol className="flex items-start" aria-label="Order progress">
+      {STEPS.map((st, i) => {
+        const done = i <= reached;
+        const bad = failed && i === reached;
+        return (
+          <li key={st} className="relative flex min-w-0 flex-1 flex-col items-center text-center">
+            {i > 0 && <span className={cn("absolute right-1/2 top-[9px] h-px w-full", i <= reached ? (failed && i === reached ? "bg-red-400/60" : "bg-accent/70") : "bg-border")} />}
+            <span className={cn("relative z-10 grid size-[19px] place-items-center rounded-full border text-[9px]", bad ? "border-red-400 bg-red-400/20 text-red-300" : done ? "border-accent bg-accent text-accent-foreground" : "bg-card text-muted-foreground")}>
+              {bad ? "!" : done ? "✓" : ""}
+            </span>
+            <span className={cn("mt-1.5 hidden font-mono text-[9px] sm:block", done ? "text-foreground" : "text-muted-foreground")}>{st}</span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -139,7 +176,8 @@ function OrderDetail({ order }: { order: Order }) {
         <p className="font-mono text-xs text-muted-foreground">{order.id}</p>
         <StateBadge state={order.state} />
       </div>
-      <pre className="mt-4 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-[12px] leading-relaxed">{order.memo}</pre>
+      <div className="mt-5"><Pipeline order={order} /></div>
+      <pre className="mt-5 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-[12px] leading-relaxed">{order.memo}</pre>
       <div className="mt-5"><Timeline order={order} /></div>
     </Panel>
   );
@@ -148,6 +186,7 @@ function OrderDetail({ order }: { order: Order }) {
 export function Console() {
   const [view, setView] = useState<View>("overview");
   const [open, setOpen] = useState(false);
+  const collapsed = false;
   const [memo, setMemo] = useState(SAMPLE);
   const [zec, setZec] = useState(0.05);
   const [busy, setBusy] = useState(false);
@@ -194,7 +233,6 @@ export function Console() {
     return { total: data.orders.length, done, failed, spent };
   }, [data.orders]);
   const active = orders.find((o) => o.id === selected) ?? orders[0];
-  const liveCount = Object.values(data.adapters).filter((m) => m === "live").length;
   const current = NAV.find((n) => n.id === view)!;
 
   const go = (v: View) => {
@@ -202,48 +240,85 @@ export function Console() {
     setOpen(false);
   };
 
-  const sidebar = (
+  const modes: [string, string][] = [
+    ["Wallet", data.adapters.wallet],
+    ["Shop", data.adapters.shop],
+    ["Payment", data.adapters.swap],
+  ];
+  const sidebar = (compact: boolean) => (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center border-b px-5"><BrandLogo /></div>
-      <nav aria-label="Console" className="flex-1 space-y-1 p-3">
-        <p className="px-3 pb-1 pt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Workspace</p>
-        {NAV.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => go(id)}
-            aria-current={view === id ? "page" : undefined}
-            className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-              view === id ? "bg-accent/10 text-accent" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4" />
-            {label}
-            {id === "orders" && stats.total > 0 && (
-              <span className="ml-auto rounded-full bg-muted px-2 font-mono text-[10px] text-foreground">{stats.total}</span>
-            )}
-          </button>
+      <div className={cn("flex h-16 items-center border-b", compact ? "justify-center" : "px-5")}>
+        {compact ? <BrandMark /> : <BrandLogo />}
+      </div>
+      {!compact && (
+        <div className="mx-3 mt-4 rounded-xl border bg-muted/40 p-3">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Network</span>
+            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-emerald-300">
+              <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> live
+            </span>
+          </div>
+          <p className="mt-1.5 text-sm font-medium">Zcash testnet</p>
+          <p className="font-mono text-[11px] text-muted-foreground">NU7 · shielded memos</p>
+        </div>
+      )}
+      <nav aria-label="Console" className="flex-1 overflow-y-auto px-3 py-4">
+        {NAV_GROUPS.map((g) => (
+          <div key={g.title} className="mb-5">
+            {!compact && <p className="px-3 pb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{g.title}</p>}
+            <div className="space-y-0.5">
+              {g.items.map(({ id, label, icon: Icon }) => {
+                const on = view === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => go(id)}
+                    title={compact ? label : undefined}
+                    aria-current={on ? "page" : undefined}
+                    className={cn(
+                      "group relative flex w-full items-center gap-3 rounded-lg py-2 text-sm transition-colors",
+                      compact ? "justify-center px-0" : "px-3",
+                      on ? "bg-accent/10 font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    {on && <span className="absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent" />}
+                    <Icon className={cn("size-[18px] shrink-0", on ? "text-accent" : "group-hover:text-foreground")} />
+                    {!compact && label}
+                    {!compact && id === "orders" && stats.total > 0 && (
+                      <span className="ml-auto rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] text-foreground">{stats.total}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         ))}
       </nav>
-      <div className="space-y-3 border-t p-4">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className={cn("size-2 rounded-full", liveCount > 0 ? "bg-emerald-400" : "bg-accent")} />
-          {liveCount > 0 ? `${liveCount} of 3 adapters live` : "Simulated mode"}
-        </div>
-        <Link href="/" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="size-3.5" /> Back to site
-        </Link>
+      <div className="space-y-3 border-t p-3">
+        {!compact && (
+          <ul className="space-y-1.5 rounded-xl border bg-muted/40 p-3">
+            {modes.map(([label, mode]) => (
+              <li key={label} className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{label}</span>
+                <span className="inline-flex items-center gap-1.5 font-mono text-[11px]">
+                  <span className={cn("size-1.5 rounded-full", mode === "simulated" ? "bg-accent" : "bg-emerald-400")} />
+                  {mode}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
 
   return (
     <div className="flex min-h-screen">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r bg-card/40 lg:block">{sidebar}</aside>
+      <aside className={cn("sticky top-0 hidden h-screen shrink-0 border-r bg-card/40 transition-[width] duration-200 lg:block", collapsed ? "w-[72px]" : "w-64")}>{sidebar(collapsed)}</aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-          <aside className="relative h-full w-64 border-r bg-background">{sidebar}</aside>
+          <aside className="relative h-full w-64 border-r bg-background">{sidebar(false)}</aside>
         </div>
       )}
 
@@ -252,9 +327,12 @@ export function Console() {
           <button onClick={() => setOpen(true)} aria-label="Open menu" className="grid size-9 place-items-center rounded-lg border lg:hidden">
             {open ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
-          <h1 className="font-display text-lg font-semibold tracking-tight">{current.label}</h1>
-          <span className="ml-auto hidden rounded-full border px-3 py-1 font-mono text-[11px] text-muted-foreground sm:inline">
-            Zcash testnet
+          <div className="min-w-0">
+            <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:block">Console</p>
+            <h1 className="font-display text-lg font-semibold leading-tight tracking-tight">{current.label}</h1>
+          </div>
+          <span className="ml-auto hidden items-center gap-2 rounded-full border px-3 py-1 font-mono text-[11px] text-muted-foreground sm:inline-flex">
+            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> Live · Zcash testnet
           </span>
           <button
             onClick={() => go("new")}
@@ -268,18 +346,29 @@ export function Console() {
           {view === "overview" && (
             <>
               <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-                {[
-                  ["Total orders", String(stats.total)],
-                  ["Fulfilled", String(stats.done)],
-                  ["Refunded / rejected", String(stats.failed)],
-                  ["Spent", `$${stats.spent.toFixed(2)}`],
-                ].map(([label, value]) => (
+                {(
+                  [
+                    ["Total orders", String(stats.total), ShoppingBag, "text-foreground"],
+                    ["Fulfilled", String(stats.done), PackageCheck, "text-emerald-300"],
+                    ["Refunded / rejected", String(stats.failed), Undo2, "text-red-300"],
+                    ["Spent from balance", `$${stats.spent.toFixed(2)}`, CircleDollarSign, "text-accent"],
+                  ] as const
+                ).map(([label, value, Icon, tone]) => (
                   <div key={label} className="rounded-xl border bg-card p-5">
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="mt-2 font-display text-3xl font-semibold tracking-tight">{value}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                      <span className="grid size-8 place-items-center rounded-lg bg-muted"><Icon className={cn("size-4", tone)} /></span>
+                    </div>
+                    <p className="mt-3 font-display text-3xl font-semibold tracking-tight">{value}</p>
                   </div>
                 ))}
               </div>
+              {orders[0] && (
+                <Panel title="Latest order" action={<StateBadge state={orders[0].state} />}>
+                  <p className="mb-5 text-sm">{orders[0].product ?? orders[0].note ?? "processing"}</p>
+                  <Pipeline order={orders[0]} />
+                </Panel>
+              )}
               <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
                 <Panel title="Recent orders" action={<button onClick={() => go("orders")} className="text-xs text-accent hover:underline">View all</button>}>
                   <OrdersTable orders={orders.slice(0, 6)} />
@@ -346,6 +435,7 @@ export function Console() {
                       <p className="text-sm">{orders[0].product ?? orders[0].note ?? "processing"}</p>
                       <StateBadge state={orders[0].state} />
                     </div>
+                    <div className="mb-6"><Pipeline order={orders[0]} /></div>
                     <Timeline order={orders[0]} />
                   </>
                 ) : (

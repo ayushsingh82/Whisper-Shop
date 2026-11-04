@@ -20,3 +20,10 @@ export class MockShop implements Shop {
 export class MockSwapper implements Swapper {
   async swapAndPay(_i: InvoiceInfo, budget: bigint) { return { ref: "mock-swap-1", spentZatoshi: budget }; }
 }
+
+/** Pays from the Bitrefill account balance: Bitrefill debits the invoice itself, so there is no swap leg. */
+export class BalanceSwapper implements Swapper {
+  async swapAndPay(inv: InvoiceInfo) {
+    return { ref: `bitrefill-balance:${inv.invoiceId}`, spentZatoshi: 0n };
+  }
+}

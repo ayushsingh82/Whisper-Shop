@@ -1,5 +1,5 @@
 import { BitrefillShop } from "./bitrefill";
-import { MockShop, MockSwapper, MockWallet } from "./mocks";
+import { BalanceSwapper, MockShop, MockSwapper, MockWallet } from "./mocks";
 import { handleMemo, type Deps } from "./orchestrator";
 import { Store } from "./store";
 import type { Wallet } from "./types";
@@ -9,7 +9,7 @@ import { ZcashCliWallet } from "./zcash-cli";
 export interface AdapterStatus {
   wallet: "simulated" | "live";
   shop: "simulated" | "live";
-  swap: "simulated" | "live";
+  swap: "simulated" | "live" | "balance";
 }
 
 const g = globalThis as unknown as { __ws?: { deps: Deps; wallet: Wallet; n: number; adapters: AdapterStatus } };
@@ -23,11 +23,11 @@ export function runtime() {
         ? new ZcashCliWallet({ bin: process.env.ZCASH_DEVTOOL_BIN ?? "zcash-devtool", walletDir: dir, identity, server: process.env.ZCASH_SERVER ?? "zecrocks" })
         : new MockWallet();
     const key = process.env.BITREFILL_API_KEY;
-    // Only the adapters that are really wired report "live". The swap stays simulated until implemented.
+    // Only the adapters that are really wired report "live". Swap is skipped: with a key Bitrefill is paid from account balance.
     const adapters: AdapterStatus = {
       wallet: wallet instanceof ZcashCliWallet ? "live" : "simulated",
       shop: key ? "live" : "simulated",
-      swap: "simulated",
+      swap: key ? "balance" : "simulated", // with a key, Bitrefill is paid from account balance (no swap leg)
     };
     g.__ws = {
       wallet,
@@ -36,12 +36,12 @@ export function runtime() {
       deps: {
         wallet,
         shop: key ? new BitrefillShop(key) : new MockShop(),
-        swapper: new MockSwapper(),
+        swapper: key ? new BalanceSwapper() : new MockSwapper(),
         store: new Store(".data/orders.json"),
         policy: { maxOrderUsd: 20, dailyCapUsd: 50, allowedKinds: ["esim", "topup", "giftcard"], zecUsd: 400 },
-        payMethod: "litecoin",
-        fulfilmentPolls: 3,
-        sleep: (ms) => new Promise((r) => setTimeout(r, Math.min(ms, 700))),
+        payMethod: key ? "balance" : "litecoin",
+        fulfilmentPolls: key ? 30 : 3, // real shops take seconds to deliver; the mock is instant
+        sleep: (ms) => new Promise((r) => setTimeout(r, key ? ms : Math.min(ms, 700))),
       },
     };
   }
