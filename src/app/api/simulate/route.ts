@@ -6,6 +6,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "memo required, max 512 bytes" }, { status: 400 });
   }
   const z = BigInt(Math.round((Number(zec) > 0 ? Number(zec) : 0.05) * 1e8));
-  void simulate(memo, z); // runs in the background; the console polls /api/orders
-  return Response.json({ accepted: true });
+  const { id, run } = await simulate(memo, z);
+  void run; // keeps running in the background; clients poll /api/orders
+  return Response.json({ accepted: true, id });
 }

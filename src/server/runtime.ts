@@ -40,5 +40,7 @@ export function runtime() {
 export async function simulate(memo: string, zatoshi: bigint) {
   const rt = runtime();
   rt.n += 1;
-  await handleMemo(rt.deps, { txid: `sim${Date.now()}${rt.n}`, outputIndex: 0, amountZatoshi: zatoshi, memo });
+  const txid = `sim${Date.now()}${rt.n}`;
+  const run = handleMemo(rt.deps, { txid, outputIndex: 0, amountZatoshi: zatoshi, memo });
+  return { id: `${txid}:0`, run };
 }
