@@ -2,6 +2,8 @@ import { BitrefillShop } from "./bitrefill";
 import { MockShop, MockSwapper, MockWallet } from "./mocks";
 import { handleMemo, type Deps } from "./orchestrator";
 import { Store } from "./store";
+import type { Wallet } from "./types";
+import { ZcashCliWallet } from "./zcash-cli";
 
 /** Process-wide runtime. SIMULATED adapters until the real wallet, Bitrefill key and swap are wired. */
 export interface AdapterStatus {
@@ -10,14 +12,23 @@ export interface AdapterStatus {
   swap: "simulated" | "live";
 }
 
-const g = globalThis as unknown as { __ws?: { deps: Deps; wallet: MockWallet; n: number; adapters: AdapterStatus } };
+const g = globalThis as unknown as { __ws?: { deps: Deps; wallet: Wallet; n: number; adapters: AdapterStatus } };
 
 export function runtime() {
   if (!g.__ws) {
-    const wallet = new MockWallet();
+    const dir = process.env.WHISPER_WALLET_DIR;
+    const identity = process.env.WHISPER_IDENTITY;
+    const wallet: Wallet =
+      dir && identity
+        ? new ZcashCliWallet({ bin: process.env.ZCASH_DEVTOOL_BIN ?? "zcash-devtool", walletDir: dir, identity, server: process.env.ZCASH_SERVER ?? "zecrocks" })
+        : new MockWallet();
     const key = process.env.BITREFILL_API_KEY;
-    // Only the adapters that are really wired report "live". Wallet and swap stay simulated until implemented.
-    const adapters: AdapterStatus = { wallet: "simulated", shop: key ? "live" : "simulated", swap: "simulated" };
+    // Only the adapters that are really wired report "live". The swap stays simulated until implemented.
+    const adapters: AdapterStatus = {
+      wallet: wallet instanceof ZcashCliWallet ? "live" : "simulated",
+      shop: key ? "live" : "simulated",
+      swap: "simulated",
+    };
     g.__ws = {
       wallet,
       n: 0,
