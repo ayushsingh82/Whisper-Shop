@@ -15,7 +15,7 @@ No website. No account. No email.
 
 Built for the Zcash FREE SOCIETY Hackathon (Mumbai, 4–5 Nov 2026), targeting the **Zcash Privacy** and **Agentic Commerce (Bitrefill)** tracks.
 
-> **Status:** working prototype on Zcash testnet. Components that depend on external credentials fall back to clearly labelled simulated adapters. See [Real vs simulated](#real-vs-simulated).
+> **Status:** complete and working on Zcash testnet. A real shielded order was decrypted, a real eSIM was bought from Bitrefill, and the code came back as a shielded memo. See [Testnet proof](#testnet-proof) and [Real vs simulated](#real-vs-simulated).
 
 ## Overview
 
@@ -124,6 +124,8 @@ A complete round trip on Zcash testnet (NU7): a shielded order with a `WS1` memo
 
 The order memo asked for `esim thailand 1gb 7d` with a 4 USD cap. The agent bought "Bitrefill eSIM Thailand 1GB, 7 Days" for 2.89 USD (Bitrefill invoice `2c244888-c027-484e-9d5c-43b3eef05c49`) and the buyer wallet decrypted the reply memo. The Bitrefill purchase was paid from the account balance, not ZEC (see [Real vs simulated](#real-vs-simulated)).
 
+The first reply memo was sent with `scripts/recover-order.mts` after the worker timed out waiting for delivery; the worker has since been fixed to wait for real shops. The recovery script only reads the existing invoice and never buys again.
+
 Shielded transactions reveal almost nothing on an explorer, by design: expect `Tx Type: Shielded` and no visible amounts or memo.
 
 ## Quick start
@@ -192,6 +194,7 @@ All docs live in [`src/md/`](./src/md):
 - [ ] Pay Bitrefill directly in ZEC (needs a swap; Bitrefill does not document ZEC)
 - [ ] Whisper Standing Orders (recurring orders)
 - [ ] Publish the memo-order spec and library
+- [ ] Pay Bitrefill directly in ZEC through a swap
 
 ## License
 

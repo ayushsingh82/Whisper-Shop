@@ -70,7 +70,10 @@ BITREFILL_API_KEY=... npx tsx scripts/bitrefill-check.mts "esim thailand" TH   #
 | Part | State |
 |---|---|
 | Memo parser, policy engine, state machine | Done, tested |
-| Console, receipt page, orders API | Done |
-| zcash-devtool wallet adapter | Done, flags match the installed tool. Real memo output format still to be confirmed with a funded wallet. |
-| Bitrefill client | Written against the docs. Needs a real API key to confirm response shapes. |
-| ZEC to invoice-asset swap | Not started. NEAR Intents has no testnet. |
+| Console (sidebar dashboard), receipt page, orders API | Done |
+| zcash-devtool wallet adapter | Done and verified on testnet: sync, enhance, read memos, send memos |
+| Bitrefill client | Done and verified: search, prices, purchase from account balance, delivery |
+| Bitrefill payment | From account balance. No ZEC swap (Bitrefill does not document ZEC) |
+| Real round trip | Done: shielded order, real eSIM purchase, shielded reply (see the README) |
+
+Note: memos are only readable after `wallet enhance`, which the adapter runs after every sync.

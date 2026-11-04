@@ -1,3 +1,7 @@
+# Requirements and status
+
+> **Status: all set.** Testnet funds, the Bitrefill key and both wallets are in place, and the real round trip is done. What remains is yours: record the demo video, fill in the Stadium form (answers in [SUBMISSION.md](./SUBMISSION.md)), add teammates, and submit before 00:00 on 5 Nov. The list below is the original plan and is kept for reference.
+
 # What I need from you to finish Whisper Shop
 
 Everything I cannot create myself: accounts, keys, funds, installs, and decisions. Items marked **verify** are things I could not confirm from docs, so check the current instructions first (mentors, Zcash Discord, the official docs).
