@@ -200,18 +200,3 @@ export function Faq() {
     </section>
   );
 }
-
-export function Cta() {
-  return (
-    <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
-      <div className="relative overflow-hidden rounded-3xl border bg-card px-6 py-16 text-center">
-        <div className="bg-grid pointer-events-none absolute inset-0 opacity-30 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
-        <h2 className="relative font-display text-3xl font-semibold tracking-tight sm:text-4xl">Shop like it&apos;s a private message.</h2>
-        <p className="relative mx-auto mt-3 max-w-md text-muted-foreground">Open source, testnet first. Follow the build on GitHub.</p>
-        <a href="https://github.com/ayushsingh82/Wshiper-Shop" className="relative mt-7 inline-flex items-center gap-2 rounded-lg bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90">
-          View on GitHub <ArrowRight className="size-4" />
-        </a>
-      </div>
-    </section>
-  );
-}
