@@ -22,8 +22,8 @@ export function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <a href="#how" className="inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3.5 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90">
-            Place an order <ArrowRight className="size-3.5" />
+          <a href="/app" className="inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3.5 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90">
+            Open console <ArrowRight className="size-3.5" />
           </a>
           <details className="group relative md:hidden">
             <summary className="grid size-9 cursor-pointer list-none place-items-center rounded-lg border [&::-webkit-details-marker]:hidden" aria-label="Menu">
