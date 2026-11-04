@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Whisper Shop">
+  <rect width="64" height="64" rx="16" fill="#131313"/>
+  <path d="M32 10 48 15.5V29c0 9.5-6 16-13.5 19.5L23 55l1.5-8C18.500 44 16 37.5 16 29V15.500L32 10Z" fill="#f5a524"/>
+  <circle cx="32" cy="27" r="4" fill="#131313"/>
+  <path d="M30 29h4l1.5 8h-7Z" fill="#131313"/>
+</svg>

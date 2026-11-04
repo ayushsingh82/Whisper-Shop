@@ -1,17 +1,14 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-/** Whisper Shop mark: a speech bubble with a shielded keyhole, on the accent tile. */
+/** Whisper Shop mark: a shield that is also a speech bubble, with a keyhole. */
 export function BrandMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 64 64" role="img" aria-label="Whisper Shop" className={cn("size-7", className)}>
-      <rect width="64" height="64" rx="16" className="fill-accent" />
-      <path
-        className="fill-accent-foreground"
-        d="M18 14h28a8 8 0 0 1 8 8v16a8 8 0 0 1-8 8H34l-9 9v-9h-7a8 8 0 0 1-8-8V22a8 8 0 0 1 8-8Z"
-      />
-      <circle cx="32" cy="28" r="4.5" className="fill-accent" />
-      <path className="fill-accent" d="M30 30h4l1.5 8h-7Z" />
+    <svg viewBox="0 0 64 64" role="img" aria-label="Whisper Shop" className={cn("size-8", className)}>
+      <rect width="64" height="64" rx="16" fill="#131313" />
+      <path d="M32 10 48 15.5V29c0 9.5-6 16-13.5 19.5L23 55l1.5-8C18.5 44 16 37.5 16 29V15.5L32 10Z" fill="#f5a524" />
+      <circle cx="32" cy="27" r="4" fill="#131313" />
+      <path d="M30 29h4l1.5 8h-7Z" fill="#131313" />
     </svg>
   );
 }

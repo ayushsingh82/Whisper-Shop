@@ -2,7 +2,7 @@
 
 **Event:** Zcash FREE SOCIETY Hackathon, 4–5 Nov 2026, Mumbai. Hard deadline 5 Nov 00:00 IST. Early judging ~20:00.
 **Tracks:** Zcash Privacy + Agentic Commerce (Bitrefill)
-**Status:** planning only. All project code must be written after 11:00 on 4 Nov in a fresh public repo. This folder holds planning notes, not the project.
+**Status:** built during the hackathon. See [SETUP.md](./SETUP.md) for current state.
 
 ## One-line pitch
 Send shielded ZEC to a shop address with a memo like `esim thailand 5gb`. An agent buys it from Bitrefill and replies with the redemption code or eSIM details in a shielded memo. No website, no account, no email.
